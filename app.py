@@ -190,34 +190,27 @@ elif mode == "Video":
             )
 
         cap.release()
-writer.release()
+        writer.release()
 
-progress_bar.empty()
-status.empty()
+        progress_bar.empty()
+        status.empty()
 
-st.success("✅ Video Processing Completed!")
+        st.success("✅ Video Processing Completed!")
 
-# Give the server time to finish writing the file
-import time
-time.sleep(2)
+        st.subheader("Processed Video")
 
-st.subheader("Processed Video")
+        st.video(output_path)
 
-# Read video as bytes instead of using the file path
-with open(output_path, "rb") as video_file:
-    video_bytes = video_file.read()
+        st.metric(
+            "Total Pothole Detections",
+            total_detections
+        )
 
-st.video(video_bytes)
+        with open(output_path, "rb") as file:
 
-st.metric(
-    "Total Pothole Detections",
-    total_detections
-)
-
-with open(output_path, "rb") as file:
-    st.download_button(
-        "⬇ Download Processed Video",
-        file,
-        file_name="pothole_detection_output.mp4",
-        mime="video/mp4"
-    )
+            st.download_button(
+                "⬇ Download Processed Video",
+                file,
+                file_name="pothole_detection_output.mp4",
+                mime="video/mp4"
+            )
