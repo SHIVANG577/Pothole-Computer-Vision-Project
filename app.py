@@ -86,7 +86,6 @@ if mode == "Image":
         c3.metric("Highest Confidence", f"{max_conf:.2f}")
 
   # ---------------- VIDEO MODE ---------------- #
-
 elif mode == "Video":
 
     uploaded_video = st.sidebar.file_uploader(
@@ -94,44 +93,65 @@ elif mode == "Video":
         type=["mp4", "avi", "mov"]
     )
 
+    process = st.sidebar.button("🚀 Process Video")
+
     if uploaded_video is not None:
 
-        st.subheader("Original Video")
         st.video(uploaded_video)
+
+    if uploaded_video is not None and process:
 
         # Save uploaded video temporarily
         temp_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
         temp_video.write(uploaded_video.read())
         temp_video.close()
 
-        cap = cv2.VideoCapture(temp_video.name)
+        video_path = temp_video.name
 
-        frame_placeholder = st.empty()
+        cap = cv2.VideoCapture(video_path)
 
-        c1, c2, c3 = st.columns(3)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        fps_metric = c1.empty()
-        frame_metric = c2.empty()
-        detection_metric = c3.empty()
+        output_path = "processed_output.mp4"
+
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+
+        writer = cv2.VideoWriter(
+            output_path,
+            fourcc,
+            fps,
+            (width, height)
+        )
 
         progress_bar = st.progress(0)
 
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        frame_number = 0
+        status = st.empty()
 
-        prev_time = time.time()
+        metric1, metric2, metric3 = st.columns(3)
+
+        fps_metric = metric1.empty()
+        frame_metric = metric2.empty()
+        detection_metric = metric3.empty()
+
+        frame = 0
+        total_detections = 0
+
+        start_time = time.time()
 
         while cap.isOpened():
 
-            success, frame = cap.read()
+            success, image = cap.read()
 
             if not success:
                 break
 
-            frame_number += 1
+            frame += 1
 
             results = model.predict(
-                frame,
+                image,
                 conf=confidence,
                 verbose=False
             )
@@ -140,36 +160,57 @@ elif mode == "Video":
 
             detections = len(results[0].boxes)
 
-            current_time = time.time()
+            total_detections += detections
 
-            fps = 1 / (current_time - prev_time)
-            prev_time = current_time
+            writer.write(annotated)
+
+            elapsed = time.time() - start_time
+
+            current_fps = frame / elapsed if elapsed > 0 else 0
 
             fps_metric.metric(
-                "FPS",
-                f"{fps:.2f}"
+                "Processing FPS",
+                f"{current_fps:.2f}"
             )
 
             frame_metric.metric(
                 "Frame",
-                f"{frame_number}/{total_frames}"
+                f"{frame}/{total_frames}"
             )
 
             detection_metric.metric(
-                "Detections",
+                "Current Detections",
                 detections
             )
 
-            progress_bar.progress(frame_number / total_frames)
+            progress_bar.progress(frame / total_frames)
 
-            frame_placeholder.image(
-                annotated,
-                channels="BGR",
-                use_container_width=True
+            status.write(
+                f"Processing frame {frame} of {total_frames}..."
             )
 
         cap.release()
+        writer.release()
 
         progress_bar.empty()
+        status.empty()
 
         st.success("✅ Video Processing Completed!")
+
+        st.subheader("Processed Video")
+
+        st.video(output_path)
+
+        st.metric(
+            "Total Pothole Detections",
+            total_detections
+        )
+
+        with open(output_path, "rb") as file:
+
+            st.download_button(
+                "⬇ Download Processed Video",
+                file,
+                file_name="pothole_detection_output.mp4",
+                mime="video/mp4"
+            )
