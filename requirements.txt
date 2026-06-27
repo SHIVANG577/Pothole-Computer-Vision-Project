@@ -4,3 +4,9 @@ opencv-python
 numpy
 Pillow
 supervision
+git+https://github.com/sunsmarterjie/yolov12.git
+streamlit
+opencv-python-headless
+numpy
+Pillow
+huggingface_hub
