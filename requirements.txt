@@ -1,6 +1,7 @@
 git+https://github.com/sunsmarterjie/yolov12.git
 streamlit
-opencv
+opencv-python-headless
 numpy
 Pillow
 huggingface_hub
+supervision
