@@ -1,8 +1,8 @@
 streamlit
-numpy
+ultralytics==8.3.0
+opencv-python-headless==4.10.0.84
+numpy<2
 Pillow
-opencv-python-headless
 supervision
 huggingface_hub
-ultralytics
 git+https://github.com/sunsmarterjie/yolov12.git
